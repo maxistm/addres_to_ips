@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Address to IPs Resolver</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='css/index.css') }}">
+</head>
+<body>
+    <div class="shell">
+        <div class="container">
+            <section class="hero">
+                <div class="hero-copy">
+                    <div class="eyebrow">DNS / IP Toolkit</div>
+                    <h1>Fast Domain to IP Resolution</h1>
+                    <p>A modern dark dashboard for DNS checks, WireGuard AllowedIPs preparation, and Keenetic command generation without extra steps.</p>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat-card">
+                        <strong>3</strong>
+                        <span>Output formats: IP list, WireGuard, and Keenetic.</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>0-10</strong>
+                        <span>Control over recursive DNS chain traversal depth.</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>10s</strong>
+                        <span>Default timeout for fast and predictable checks.</span>
+                    </div>
+                    <div class="stat-card">
+                        <strong>.txt</strong>
+                        <span>Instant result export in the appropriate format.</span>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content">
+                <div class="panel">
+                    <h2>Request Parameters</h2>
+                    <p class="panel-intro">Enter a domain or URL, configure limits, and choose the output format.</p>
+
+                    <form id="resolveForm" class="form-grid">
+                        <div class="form-group">
+                            <label for="dns"><span class="field-label">Domain or URL *</span></label>
+                            <input
+                                type="text"
+                                id="dns"
+                                name="dns"
+                                placeholder="example.com or https://example.com"
+                                required
+                            >
+                            <span class="hint">You can enter either a plain domain name or a full URL.</span>
+                            <span class="field-error" id="dnsError"></span>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="timeout"><span class="field-label">Timeout (seconds)</span></label>
+                                <input
+                                    type="number"
+                                    id="timeout"
+                                    name="timeout"
+                                    value="10"
+                                    min="1"
+                                    max="300"
+                                >
+                                <span class="hint">Default: 10 seconds.</span>
+                                <span class="field-error" id="timeoutError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="maxDepth"><span class="field-label">Recursion depth</span></label>
+                                <input
+                                    type="number"
+                                    id="maxDepth"
+                                    name="maxDepth"
+                                    value="1"
+                                    min="0"
+                                    max="10"
+                                    title="Recursive DNS lookup depth (0 = current domain only)"
+                                >
+                                <span class="hint">Default: 1. Value 0 checks only the original domain.</span>
+                                <span class="field-error" id="maxDepthError"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="waitAfterLoad"><span class="field-label">Timeout (ms)</span></label>
+                                <input
+                                    type="number"
+                                    id="waitAfterLoad"
+                                    name="waitAfterLoad"
+                                    value="3000"
+                                    min="0"
+                                >
+                                <span class="hint">Default: 3000 ms. Useful for late JS requests.</span>
+                                <span class="field-error" id="waitAfterLoadError"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="dnsServer"><span class="field-label">DNS server</span></label>
+                                <select id="dnsServer" name="dnsServer">
+                                    <option value="both">Google + Cloudflare</option>
+                                    <option value="google">Google 8.8.8.8</option>
+                                    <option value="cloudflare">Cloudflare 1.1.1.1</option>
+                                    <option value="custom">Custom</option>
+                                </select>
+                                <span class="hint">Choose one preset or enter your own IPv4 DNS server.</span>
+                                <span class="field-error" id="dnsServerError"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-group hidden" id="customDnsServerGroup">
+                            <label for="customDnsServer"><span class="field-label">Custom DNS server</span></label>
+                            <input
+                                type="text"
+                                id="customDnsServer"
+                                name="customDnsServer"
+                                placeholder="8.8.4.4"
+                            >
+                            <span class="hint">Used only when the custom option is selected.</span>
+                            <span class="field-error" id="customDnsServerError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="format"><span class="field-label">Output format</span></label>
+                            <select id="format" name="format">
+                                <option value="ips">IP addresses</option>
+                                <option value="wireguard">WireGuard</option>
+                                <option value="keenetic">Keenetic</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group hidden" id="gatewayGroup">
+                            <label for="gateway"><span class="field-label">Gateway</span></label>
+                            <input
+                                type="text"
+                                id="gateway"
+                                name="gateway"
+                                placeholder="192.168.1.1"
+                                value="10.0.0.18"
+                            >
+                            <span class="hint">Used only for Keenetic route generation.</span>
+                            <span class="field-error" id="gatewayError"></span>
+                        </div>
+
+                        <button type="submit" id="submitBtn" class="primary-btn">Resolve DNS</button>
+                    </form>
+                </div>
+
+                <div class="side-stack">
+                    <div class="info-card">
+                        <h3>What you get</h3>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <strong>IP list</strong>
+                                <span>A ready-to-export list of addresses for manual checks.</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>WireGuard</strong>
+                                <span>An AllowedIPs line ready to paste into your config.</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Keenetic</strong>
+                                <span>Routing commands generated for your gateway.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="info-card">
+                        <h3>Hints</h3>
+                        <div class="info-list">
+                            <div class="info-item">
+                                <strong>URL or host</strong>
+                                <span>If you provide a URL, the app will automatically extract the destination host.</span>
+                            </div>
+                            <div class="info-item">
+                                <strong>Recursion</strong>
+                                <span>Default depth is 1. Increase it only if you need nested lookup chains.</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <div class="loading" id="loading"><span class="spinner"></span>Processing request...</div>
+            <div class="error" id="error"></div>
+
+            <div class="results" id="results">
+                <div class="results-grid">
+                    <div class="result-section">
+                        <h3>Summary</h3>
+                        <div class="result-meta">
+                            <div class="result-item"><strong>Hostname:</strong> <span id="resultHostname"></span></div>
+                            <div class="result-item"><strong>IP count:</strong> <span id="resultCount"></span></div>
+                        </div>
+                    </div>
+
+                    <div class="result-section">
+                        <h3>Resolved IP addresses</h3>
+                        <div id="resultIps" class="result-list"></div>
+                    </div>
+
+                    <div class="result-section">
+                        <h3>Save result</h3>
+                        <div class="download-row">
+                            <button type="button" id="downloadBtn" class="btn-download">Download file</button>
+                        </div>
+                    </div>
+
+                    <div class="result-section hidden" id="wireguardSection">
+                        <h3>WireGuard configuration</h3>
+                        <div id="resultWireguard" class="result-list"></div>
+                    </div>
+
+                    <div class="result-section hidden" id="keeneticSection">
+                        <h3>Keenetic commands</h3>
+                        <div id="resultKeenetic" class="result-list"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', path='js/index.js') }}"></script>
+</body>
+</html>
