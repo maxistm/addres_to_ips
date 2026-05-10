@@ -7,3 +7,12 @@ services:
     restart: unless-stopped
     ports:
       - "8080:8080"
+    networks:
+      - addres-to-ips-net
+
+networks:
+  addres-to-ips-net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.250.10.0/24
